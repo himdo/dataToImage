@@ -1,6 +1,6 @@
 import numpy as np
 from PIL import Image
-
+import math
 
 def dataToImage(data, imagePath):
     module = len(data)%3
@@ -11,13 +11,36 @@ def dataToImage(data, imagePath):
             paddingNeeded = 2
         elif module == 2:
             paddingNeeded = 1
-    for i in range(paddingNeeded):
+    for _ in range(paddingNeeded):
         dataEncode = bytearray(b'\x00') + dataEncode
 
-    array = np.zeros([ (int)(len(dataEncode)/3), 1, 3], dtype=np.uint8)
+    oneThirdSize = (int)(len(dataEncode)/3)
+    sqrtSize = (int) (np.ceil(math.sqrt(oneThirdSize)))
 
-    for i in range((int) (len(dataEncode)/3)):
-        array[i] = [dataEncode[i*3], dataEncode[i*3+1], dataEncode[i*3+2]]
+    pixelsNeeded = (int)(sqrtSize*sqrtSize)
+
+    diffPixelCount = (int) (pixelsNeeded - oneThirdSize)
+    for i in range((int)(diffPixelCount)):
+        dataEncode = bytearray(b'\x00') + bytearray(b'\x00') + bytearray(b'\x00') + dataEncode
+        
+    array = np.zeros([sqrtSize, sqrtSize, 3], dtype=np.uint8)
+    for y in range(sqrtSize):
+        for x in range(sqrtSize):
+            array[y][x] = [dataEncode[(x*3)+(y*sqrtSize*3)], dataEncode[(x*3+1)+(y*sqrtSize*3)], dataEncode[(x*3+2)+(y*sqrtSize*3)]]
+
+    arrayRemove = 0
+    for y in range(sqrtSize):
+        removeRow = True
+        for x in range(sqrtSize):
+            emptyArray = [0,0,0]
+            if list(array[y][x]) != emptyArray:
+                removeRow = False
+                break
+        if removeRow:
+            arrayRemove = arrayRemove + 1
+        else:
+            break
+    array = array[arrayRemove:]
 
     img = Image.fromarray(array)
     img.save(imagePath)
@@ -42,7 +65,7 @@ def imageToData(imagePath):
     return decoded
 
 imagePath = 'testrgb.png'
-data='1859477846165465464asda8977432112bjjkadasdadq13459xcvm,xcchu'
+data='''a'''
 dataToImage(data, imagePath)
 
 imageToData(imagePath)
